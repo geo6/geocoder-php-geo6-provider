@@ -83,6 +83,11 @@ final class Geo6 extends AbstractHttpProvider implements Provider
             throw new InvalidArgument('Address, Street Name, and Locality (or Postal Code) cannot be empty.');
         }
 
+        $language = '';
+        if (!is_null($query->getLocale()) && preg_match('/^(fr|nl).*$/', $query->getLocale(), $matches) === 1) {
+            $language = $matches[1];
+        }
+
         $url = sprintf($this->getGeocodeEndpointUrl(), urlencode($postalCode ?? $locality), urlencode($streetName), urlencode($streetNumber));
         $json = $this->executeQuery($url);
 
@@ -98,16 +103,24 @@ final class Geo6 extends AbstractHttpProvider implements Provider
             foreach ($feature->properties->components as $component) {
                 switch ($component->type) {
                     case 'municipality':
-                        $municipality = $component->name_fr ?? $component->name_nl;
+                        if ($language === 'nl') {
+                            $municipality = $component->name_nl ?? $component->name_fr;
+                        } else {
+                            $municipality = $component->name_fr ?? $component->name_nl;
+                        }
                         break;
                     case 'postal_code':
                         $postalCode = (string) $component->id;
                         break;
                     case 'street':
-                        $streetName = $component->name_fr ?? $component->name_nl;
+                        if ($language === 'nl') {
+                            $streetName = $component->name_nl ?? $component->name_fr;
+                        } else {
+                            $streetName = $component->name_fr ?? $component->name_nl;
+                        }
                         break;
                     case 'street_number':
-                        $streetNumber = (string) $component->name_fr ?? $component->name_nl;
+                        $streetNumber = (string) $component->name_fr;
                         break;
                 }
             }
