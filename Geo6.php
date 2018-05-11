@@ -133,9 +133,7 @@ final class Geo6 extends AbstractHttpProvider implements Provider
     public function reverseQuery(ReverseQuery $query): Collection
     {
         // This API does not support reverse geocoding
-        if (filter_var($address, FILTER_VALIDATE_IP)) {
-            throw new UnsupportedOperation('The Geo-6 provider does not support reverse geocoding.');
-        }
+        throw new UnsupportedOperation('The Geo-6 provider does not support reverse geocoding.');
     }
 
     /**
