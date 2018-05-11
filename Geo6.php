@@ -98,16 +98,16 @@ final class Geo6 extends AbstractHttpProvider implements Provider
             foreach ($feature->properties->components as $component) {
                 switch ($component->type) {
                     case 'municipality':
-                        $municipality = $component->name_fr;
+                        $municipality = $component->name_fr ?? $component->name_nl;
                         break;
                     case 'postal_code':
                         $postalCode = (string) $component->id;
                         break;
                     case 'street':
-                        $streetName = $component->name_fr;
+                        $streetName = $component->name_fr ?? $component->name_nl;
                         break;
                     case 'street_number':
-                        $streetNumber = (string) $component->name_fr;
+                        $streetNumber = (string) $component->name_fr ?? $component->name_nl;
                         break;
                 }
             }
