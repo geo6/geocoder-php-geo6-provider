@@ -54,13 +54,6 @@ final class Geo6 extends AbstractHttpProvider implements Provider
         parent::__construct($client);
     }
 
-    private function getGeocodeEndpointUrl(): string
-    {
-        $url = rtrim(self::GEOCODE_ENDPOINT_URL, '/');
-
-        return $url.'/geocode/getAddressList/%s/%s/%s';
-    }
-
     /**
      * {@inheritdoc}
      */
@@ -88,7 +81,12 @@ final class Geo6 extends AbstractHttpProvider implements Provider
             $language = $matches[1];
         }
 
-        $url = sprintf($this->getGeocodeEndpointUrl(), urlencode($postalCode ?? $locality), urlencode($streetName), urlencode($streetNumber));
+        $url = rtrim(self::GEOCODE_ENDPOINT_URL, '/');
+        if (!is_null($postalCode) && !is_null($locality)) {
+            $url = sprintf($url.'/geocode/getAddressList/%s/%s/%s/%s', urlencode($locality), urlencode($postalCode), urlencode($streetName), urlencode($streetNumber));
+        } else {
+            $url = sprintf($url.'/geocode/getAddressList/%s/%s/%s', urlencode($postalCode ?? $locality), urlencode($streetName), urlencode($streetNumber));
+        }
         $json = $this->executeQuery($url);
 
         // no result
