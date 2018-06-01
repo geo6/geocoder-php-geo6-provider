@@ -207,8 +207,13 @@ final class Geo6 extends AbstractHttpProvider implements Provider
         return $body;
     }
 
-
-    public function getToken() {
+    /**
+     * Generate token needed to query API.
+     *
+     * @return object
+     */
+    private function getToken()
+    {
         $time = time();
 
         $t  = $this->clientId.'__';
