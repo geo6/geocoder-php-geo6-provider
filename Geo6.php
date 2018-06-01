@@ -161,9 +161,9 @@ final class Geo6 extends AbstractHttpProvider implements Provider
      *
      * @param string $url
      *
-     * @return string
-     *
      * @throws InvalidServerResponse
+     *
+     * @return string
      */
     protected function getUrlContents(string $url): string
     {
@@ -188,6 +188,7 @@ final class Geo6 extends AbstractHttpProvider implements Provider
         if (empty($body)) {
             throw InvalidServerResponse::emptyResponse($url);
         }
+
         return $body;
     }
 
@@ -200,7 +201,7 @@ final class Geo6 extends AbstractHttpProvider implements Provider
     {
         $time = time();
 
-        $t  = $this->clientId.'__';
+        $t = $this->clientId.'__';
         $t .= $time.'__';
         $t .= parse_url(self::GEOCODE_ENDPOINT_URL, PHP_URL_HOST).'__';
         $t .= 'GET'.'__';
@@ -257,7 +258,5 @@ final class Geo6 extends AbstractHttpProvider implements Provider
                 'countryCode'  => 'BE',
             ]);
         }
-
-        return NULL;
     }
 }
