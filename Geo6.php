@@ -96,43 +96,27 @@ final class Geo6 extends AbstractHttpProvider implements Provider
 
         $results = [];
         foreach ($json->features as $feature) {
-            $coordinates = $feature->geometry->coordinates;
+            $address_fr = $this->extractComponents($feature, 'fr');
+            $address_nl = $this->extractComponents($feature, 'nl');
 
-            foreach ($feature->properties->components as $component) {
-                switch ($component->type) {
-                    case 'municipality':
-                        if ($language === 'nl') {
-                            $municipality = $component->name_nl ?? $component->name_fr;
-                        } else {
-                            $municipality = $component->name_fr ?? $component->name_nl;
-                        }
-                        break;
-                    case 'postal_code':
-                        $postalCode = (string) $component->id;
-                        break;
-                    case 'street':
-                        if ($language === 'nl') {
-                            $streetName = $component->name_nl ?? $component->name_fr;
-                        } else {
-                            $streetName = $component->name_fr ?? $component->name_nl;
-                        }
-                        break;
-                    case 'street_number':
-                        $streetNumber = (string) $component->name_fr;
-                        break;
-                }
+            switch ($language) {
+                case 'fr':
+                    $results[] = $address_fr ?? $address_nl;
+                    break;
+
+                case 'nl':
+                    $results[] = $address_nl ?? $address_fr;
+                    break;
+
+                default:
+                    if (!is_null($address_fr)) {
+                        $results[] = $address_fr;
+                    }
+                    if (!is_null($address_nl)) {
+                        $results[] = $address_nl;
+                    }
+                    break;
             }
-
-            $results[] = Address::createFromArray([
-                'providedBy'   => $this->getName(),
-                'latitude'     => $coordinates[1],
-                'longitude'    => $coordinates[0],
-                'streetNumber' => $streetNumber,
-                'streetName'   => $streetName,
-                'locality'     => $municipality,
-                'postalCode'   => $postalCode,
-                'countryCode'  => 'BE',
-            ]);
         }
 
         return new AddressCollection($results);
@@ -228,5 +212,52 @@ final class Geo6 extends AbstractHttpProvider implements Provider
             'time'     => $time,
             'token'    => $token,
         ];
+    }
+
+    /**
+     * Extract address components in French or Dutch.
+     *
+     * @param object $feature
+     * @param string $language
+     */
+    private function extractComponents(object $feature, string $language)
+    {
+        $coordinates = $feature->geometry->coordinates;
+
+        if (in_array($language, ['fr', 'nl'])) {
+            foreach ($feature->properties->components as $component) {
+                switch ($component->type) {
+                    case 'municipality':
+                        $municipality = $component->{'name_'.$language};
+                        break;
+                    case 'postal_code':
+                        $postalCode = (string) $component->id;
+                        break;
+                    case 'street':
+                        $streetName = $component->{'name_'.$language};
+                        break;
+                    case 'street_number':
+                        $streetNumber = (string) $component->{'name_'.$language};
+                        break;
+                }
+            }
+        }
+
+        if (isset($municipality, $postalCode, $streetName, $streetNumber) &&
+            !is_null($municipality) && !is_null($postalCode) && !is_null($streetName)
+        ) {
+            return Address::createFromArray([
+                'providedBy'   => $this->getName(),
+                'latitude'     => $coordinates[1],
+                'longitude'    => $coordinates[0],
+                'streetNumber' => $streetNumber,
+                'streetName'   => $streetName,
+                'locality'     => $municipality,
+                'postalCode'   => $postalCode,
+                'countryCode'  => 'BE',
+            ]);
+        }
+
+        return NULL;
     }
 }
