@@ -21,6 +21,9 @@ use Geocoder\Exception\UnsupportedOperation;
 use Geocoder\Http\Provider\AbstractHttpProvider;
 use Geocoder\Model\Address;
 use Geocoder\Model\AddressCollection;
+use Geocoder\Model\AdminLevelCollection;
+use Geocoder\Model\Coordinates;
+use Geocoder\Model\Country;
 use Geocoder\Provider\Provider;
 use Geocoder\Query\GeocodeQuery;
 use Geocoder\Query\ReverseQuery;
@@ -230,6 +233,9 @@ final class Geo6 extends AbstractHttpProvider implements Provider
         if (in_array($language, ['fr', 'nl'])) {
             foreach ($feature->properties->components as $component) {
                 switch ($component->type) {
+                    case 'locality':
+                        $locality = $component->{'name_'.$language};
+                        break;
                     case 'municipality':
                         $municipality = $component->{'name_'.$language};
                         break;
@@ -249,16 +255,19 @@ final class Geo6 extends AbstractHttpProvider implements Provider
         if (isset($municipality, $postalCode, $streetName, $streetNumber) &&
             !is_null($municipality) && !is_null($postalCode) && !is_null($streetName)
         ) {
-            return Address::createFromArray([
-                'providedBy'   => $this->getName(),
-                'latitude'     => $coordinates[1],
-                'longitude'    => $coordinates[0],
-                'streetNumber' => $streetNumber,
-                'streetName'   => $streetName,
-                'locality'     => $municipality,
-                'postalCode'   => $postalCode,
-                'countryCode'  => 'BE',
-            ]);
+            return new Address(
+                $this->getName(),
+                new AdminLevelCollection([]),
+                new Coordinates($coordinates[1], $coordinates[0]),
+                null,
+                $streetNumber ?? null,
+                $streetName ?? null,
+                $postalCode ?? null,
+                $municipality ?? null,
+                $locality ?? null,
+                new Country('Belgium', 'BE'),
+                'Europe/Brussels'
+            );
         }
     }
 }
