@@ -62,7 +62,7 @@ final class Geo6 extends AbstractHttpProvider implements Provider
         $address = $query->getText();
 
         $streetName = $query->getData('streetName');
-        $streetNumber = $query->getData('streetNumber');
+        $streetNumber = $query->getData('streetNumber') ?? '';
         $postalCode = $query->getData('postalCode') ?? null;
         $locality = $query->getData('locality') ?? null;
 
@@ -72,8 +72,8 @@ final class Geo6 extends AbstractHttpProvider implements Provider
         }
 
         // Save a request if no valid address entered
-        if (empty($address) || empty($streetName) || (empty($postalCode) && empty($locality))) {
-            throw new InvalidArgument('Address, Street Name, and Locality (or Postal Code) cannot be empty.');
+        if (empty($address) || empty($streetName)) {
+            throw new InvalidArgument('Address and streetname cannot be empty.');
         }
 
         $language = '';
@@ -84,8 +84,10 @@ final class Geo6 extends AbstractHttpProvider implements Provider
         $url = rtrim(self::GEOCODE_ENDPOINT_URL, '/');
         if (!is_null($postalCode) && !is_null($locality)) {
             $url = sprintf($url.'/geocode/getAddressList/%s/%s/%s/%s', urlencode($locality), urlencode($postalCode), urlencode($streetName), urlencode($streetNumber));
-        } else {
+        } elseif (!is_null($postalcode) || !is_null($locality)) {
             $url = sprintf($url.'/geocode/getAddressList/%s/%s/%s', urlencode($postalCode ?? $locality), urlencode($streetName), urlencode($streetNumber));
+        } else {
+            $url = sprintf($url.'/geocode/getAddressList/%s/%s', urlencode($streetName), urlencode($streetNumber));
         }
         $json = $this->executeQuery($url);
 
