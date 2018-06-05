@@ -84,7 +84,7 @@ final class Geo6 extends AbstractHttpProvider implements Provider
         $url = rtrim(self::GEOCODE_ENDPOINT_URL, '/');
         if (!is_null($postalCode) && !is_null($locality)) {
             $url = sprintf($url.'/geocode/getAddressList/%s/%s/%s/%s', urlencode($locality), urlencode($postalCode), urlencode($streetName), urlencode($streetNumber));
-        } elseif (!is_null($postalcode) || !is_null($locality)) {
+        } elseif (!is_null($postalCode) || !is_null($locality)) {
             $url = sprintf($url.'/geocode/getAddressList/%s/%s/%s', urlencode($postalCode ?? $locality), urlencode($streetName), urlencode($streetNumber));
         } else {
             $url = sprintf($url.'/geocode/getAddressList/%s/%s', urlencode($streetName), urlencode($streetNumber));
