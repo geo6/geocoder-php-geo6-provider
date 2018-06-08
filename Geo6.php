@@ -22,8 +22,6 @@ use Geocoder\Http\Provider\AbstractHttpProvider;
 use Geocoder\Model\Address;
 use Geocoder\Model\AddressBuilder;
 use Geocoder\Model\AddressCollection;
-use Geocoder\Model\AdminLevelCollection;
-use Geocoder\Model\Coordinates;
 use Geocoder\Model\Country;
 use Geocoder\Provider\Provider;
 use Geocoder\Query\GeocodeQuery;
