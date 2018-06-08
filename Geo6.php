@@ -20,6 +20,7 @@ use Geocoder\Exception\QuotaExceeded;
 use Geocoder\Exception\UnsupportedOperation;
 use Geocoder\Http\Provider\AbstractHttpProvider;
 use Geocoder\Model\Address;
+use Geocoder\Model\AddressBuilder;
 use Geocoder\Model\AddressCollection;
 use Geocoder\Model\AdminLevelCollection;
 use Geocoder\Model\Coordinates;
@@ -233,6 +234,10 @@ final class Geo6 extends AbstractHttpProvider implements Provider
         if (in_array($language, ['fr', 'nl'])) {
             foreach ($feature->properties->components as $component) {
                 switch ($component->type) {
+                    case 'country':
+                        $country = $component->{'name_'.$language};
+                        $countryCode = $component->id;
+                        break;
                     case 'locality':
                         $locality = $component->{'name_'.$language};
                         break;
@@ -241,6 +246,12 @@ final class Geo6 extends AbstractHttpProvider implements Provider
                         break;
                     case 'postal_code':
                         $postalCode = (string) $component->id;
+                        break;
+                    case 'province':
+                        $province = $component->{'name_'.$language};
+                        break;
+                    case 'region':
+                        $region = $component->{'name_'.$language};
                         break;
                     case 'street':
                         $streetName = $component->{'name_'.$language};
@@ -255,19 +266,25 @@ final class Geo6 extends AbstractHttpProvider implements Provider
         if (isset($municipality, $postalCode, $streetName, $streetNumber) &&
             !is_null($municipality) && !is_null($postalCode) && !is_null($streetName)
         ) {
-            return new Address(
-                $this->getName(),
-                new AdminLevelCollection([]),
-                new Coordinates($coordinates[1], $coordinates[0]),
-                null,
-                $streetNumber ?? null,
-                $streetName ?? null,
-                $postalCode ?? null,
-                $municipality ?? null,
-                $locality ?? null,
-                new Country('Belgium', 'BE'),
-                'Europe/Brussels'
-            );
+            $builder = new AddressBuilder($this->getName());
+            $builder->setCoordinates($coordinates[1], $coordinates[0])
+                ->setStreetNumber($streetNumber ?? null)
+                ->setStreetName($streetName)
+                ->setLocality($municipality)
+                ->setPostalCode($postalCode)
+                ->setSubLocality($locality ?? null)
+                ->setCountry($country ?? null)
+                ->setCountryCode($countryCode ?? null);
+
+            if (isset($region) && !is_null($region)) {
+                $builder->addAdminLevel(1, $region);
+            }
+            if (isset($province) && !is_null($province)) {
+                $builder->addAdminLevel(2, $province);
+            }
+            $builder->addAdminLevel(3, $municipality);
+
+            return $builder->build();
         }
     }
 }
