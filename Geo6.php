@@ -14,9 +14,7 @@ namespace Geocoder\Provider\Geo6;
 
 use Geocoder\Collection;
 use Geocoder\Exception\InvalidArgument;
-use Geocoder\Exception\InvalidCredentials;
 use Geocoder\Exception\InvalidServerResponse;
-use Geocoder\Exception\QuotaExceeded;
 use Geocoder\Exception\UnsupportedOperation;
 use Geocoder\Http\Provider\AbstractHttpProvider;
 use Geocoder\Model\Address;
@@ -148,27 +146,27 @@ final class Geo6 extends AbstractHttpProvider implements Provider
      *
      * @return \stdClass
      */
-     private function executeQuery(string $url): \stdClass
-     {
-         $token = $this->getToken();
+    private function executeQuery(string $url): \stdClass
+    {
+        $token = $this->getToken();
 
-         $request = $this->getRequest($url);
+        $request = $this->getRequest($url);
 
-         $request = $request->withHeader('Referer', 'http'.(!empty($_SERVER['HTTPS']) ? 's' : '').'://'.$_SERVER['SERVER_NAME'].'/');
-         $request = $request->withHeader('X-Geo6-Consumer', $this->clientId);
-         $request = $request->withHeader('X-Geo6-Timestamp', $token->time);
-         $request = $request->withHeader('X-Geo6-Token', $token->token);
+        $request = $request->withHeader('Referer', 'http'.(!empty($_SERVER['HTTPS']) ? 's' : '').'://'.$_SERVER['SERVER_NAME'].'/');
+        $request = $request->withHeader('X-Geo6-Consumer', $this->clientId);
+        $request = $request->withHeader('X-Geo6-Timestamp', $token->time);
+        $request = $request->withHeader('X-Geo6-Token', $token->token);
 
-         $body = $this->getParsedResponse($request);
+        $body = $this->getParsedResponse($request);
 
-         $json = json_decode($body);
-         // API error
-         if (!isset($json)) {
-             throw InvalidServerResponse::create($url);
-         }
+        $json = json_decode($body);
+        // API error
+        if (!isset($json)) {
+            throw InvalidServerResponse::create($url);
+        }
 
-         return $json;
-     }
+        return $json;
+    }
 
     /**
      * Generate token needed to query API.
