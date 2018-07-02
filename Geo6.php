@@ -148,53 +148,27 @@ final class Geo6 extends AbstractHttpProvider implements Provider
      *
      * @return \stdClass
      */
-    private function executeQuery(string $url): \stdClass
-    {
-        $content = $this->getUrlContents($url);
-        $json = json_decode($content);
-        // API error
-        if (!isset($json)) {
-            throw InvalidServerResponse::create($url);
-        }
+     private function executeQuery(string $url): \stdClass
+     {
+         $token = $this->getToken();
 
-        return $json;
-    }
+         $request = $this->getRequest($url);
 
-    /**
-     * Get URL and return contents. If content is empty, an exception will be thrown.
-     *
-     * @param string $url
-     *
-     * @throws InvalidServerResponse
-     *
-     * @return string
-     */
-    protected function getUrlContents(string $url): string
-    {
-        $token = $this->getToken();
+         $request = $request->withHeader('Referer', 'http'.(!empty($_SERVER['HTTPS']) ? 's' : '').'://'.$_SERVER['SERVER_NAME'].'/');
+         $request = $request->withHeader('X-Geo6-Consumer', $this->clientId);
+         $request = $request->withHeader('X-Geo6-Timestamp', $token->time);
+         $request = $request->withHeader('X-Geo6-Token', $token->token);
 
-        $request = $this->getMessageFactory()->createRequest('GET', $url, [
-            'Referer'          => 'http'.(!empty($_SERVER['HTTPS']) ? 's' : '').'://'.$_SERVER['SERVER_NAME'].'/',
-            'X-Geo6-Consumer'  => $this->clientId,
-            'X-Geo6-Timestamp' => $token->time,
-            'X-Geo6-Token'     => $token->token,
-        ]);
-        $response = $this->getHttpClient()->sendRequest($request);
-        $statusCode = $response->getStatusCode();
-        if (401 === $statusCode || 403 === $statusCode) {
-            throw new InvalidCredentials();
-        } elseif (429 === $statusCode) {
-            throw new QuotaExceeded();
-        } elseif ($statusCode >= 300) {
-            throw InvalidServerResponse::create($url, $statusCode);
-        }
-        $body = (string) $response->getBody();
-        if (empty($body)) {
-            throw InvalidServerResponse::emptyResponse($url);
-        }
+         $body = $this->getParsedResponse($request);
 
-        return $body;
-    }
+         $json = json_decode($body);
+         // API error
+         if (!isset($json)) {
+             throw InvalidServerResponse::create($url);
+         }
+
+         return $json;
+     }
 
     /**
      * Generate token needed to query API.
