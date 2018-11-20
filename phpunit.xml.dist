@@ -7,8 +7,8 @@
          bootstrap="vendor/autoload.php"
 >
     <php>
-        <server name="GEO6_CUSTOMER_ID" value="ZSLzb3T9FCg8VE72" />
-        <server name="GEO6_API_KEY" value="aYasPu8XRPGMHMBa" />
+        <server name="GEO6_CUSTOMER_ID" value="" />
+        <server name="GEO6_API_KEY" value="" />
         <server name="USE_CACHED_RESPONSES" value="true" />
     </php>
 
