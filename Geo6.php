@@ -152,9 +152,9 @@ final class Geo6 extends AbstractHttpProvider implements Provider
 
         $request = $this->getRequest($url);
 
-        $request = $request->withHeader('Referer', 'http'.(!empty($_SERVER['HTTPS']) ? 's' : '').'://'.$_SERVER['SERVER_NAME'].'/');
+        $request = $request->withHeader('Referer', 'http'.(!empty($_SERVER['HTTPS']) ? 's' : '').'://'.($_SERVER['SERVER_NAME'] ?? 'localhost').'/');
         $request = $request->withHeader('X-Geo6-Consumer', $this->clientId);
-        $request = $request->withHeader('X-Geo6-Timestamp', $token->time);
+        $request = $request->withHeader('X-Geo6-Timestamp', (string) $token->time);
         $request = $request->withHeader('X-Geo6-Token', $token->token);
 
         $body = $this->getParsedResponse($request);
@@ -206,7 +206,7 @@ final class Geo6 extends AbstractHttpProvider implements Provider
                 switch ($component->type) {
                     case 'country':
                         $country = $component->{'name_'.$language};
-                        $countryCode = $component->id;
+                        // $countryCode = $component->id;
                         break;
                     case 'locality':
                         $locality = $component->{'name_'.$language};
