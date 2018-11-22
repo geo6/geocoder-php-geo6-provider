@@ -54,14 +54,29 @@ class Geo6Test extends BaseTestCase
         $provider->geocodeQuery(GeocodeQuery::create('::ffff:88.188.221.14'));
     }
 
-    /**
-     * @expectedException \Geocoder\Exception\UnsupportedOperation
-     * @expectedExceptionMessage The Geo-6 provider does not support reverse geocoding.
-     */
     public function testReverseQuery()
     {
-        $provider = new Geo6($this->getMockedHttpClient(), '', '');
-        $provider->reverseQuery(ReverseQuery::fromCoordinates(0, 0));
+        if (!isset($_SERVER['GEO6_CUSTOMER_ID']) || !isset($_SERVER['GEO6_API_KEY'])) {
+            $this->markTestSkipped('You need to configure the GEO6_CUSTOMER_ID and GEO6_API_KEY value in phpunit.xml.dist');
+        }
+
+        $provider = new Geo6($this->getHttpClient(), $_SERVER['GEO6_CUSTOMER_ID'], $_SERVER['GEO6_API_KEY']);
+
+        $query = ReverseQuery::fromCoordinates(50.841973, 4.362288)
+            ->withLocale('fr');
+
+        $results = $provider->reverseQuery($query);
+
+        $this->assertInstanceOf('Geocoder\Model\AddressCollection', $results);
+        $this->assertCount(1, $results);
+
+        /** @var \Geocoder\Model\Address $result */
+        $result = $results->first();
+        $this->assertInstanceOf('\Geocoder\Model\Address', $result);
+        $this->assertEquals(50.841973, $result->getCoordinates()->getLatitude(), '', 0.00001);
+        $this->assertEquals(4.362288, $result->getCoordinates()->getLongitude(), '', 0.00001);
+        $this->assertEquals('1000', $result->getPostalCode());
+        $this->assertEquals('BRUXELLES', $result->getLocality());
     }
 
     public function testGeocodeQuery()

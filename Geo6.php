@@ -129,8 +129,66 @@ final class Geo6 extends AbstractHttpProvider implements Provider
      */
     public function reverseQuery(ReverseQuery $query): Collection
     {
-        // This API does not support reverse geocoding
-        throw new UnsupportedOperation('The Geo-6 provider does not support reverse geocoding.');
+        $language = '';
+        if (!is_null($query->getLocale()) && preg_match('/^(fr|nl).*$/', $query->getLocale(), $matches) === 1) {
+            $language = $matches[1];
+        }
+
+        $coordinates = $query->getCoordinates();
+
+        $longitude = $coordinates->getLongitude();
+        $latitude = $coordinates->getLatitude();
+
+        $radius = $query->getData('radius');
+
+        $url = rtrim(self::GEOCODE_ENDPOINT_URL, '/');
+        if (!is_null($radius)) {
+            $url = sprintf($url.'/latlng/%s,%s,%s', floatval($latitude), floatval($longitude), floatval($radius));
+        } else {
+            $url = sprintf($url.'/latlng/%s,%s', floatval($latitude), floatval($longitude));
+        }
+
+        $json = $this->executeQuery($url);
+
+        // no result
+        if (empty($json->features)) {
+            return new AddressCollection([]);
+        }
+
+        $builder = new AddressBuilder($this->getName());
+        $builder->setCoordinates($latitude, $longitude);
+
+        foreach ($json->features as $feature) {
+            switch($feature->properties->type) {
+                case 'country':
+                    if ($language === 'fr' || empty($language)) {
+                        $country = $feature->properties->name_fr ?? $feature->properties->name_nl;
+                    } else {
+                        $country = $feature->properties->name_nl ?? $feature->properties->name_fr;
+                    }
+
+                    $builder->setCountry($country);
+                    break;
+
+                case 'municipality':
+                    if ($language === 'fr' || empty($language)) {
+                        $municipality = $feature->properties->name_fr ?? $feature->properties->name_nl;
+                    } else {
+                        $municipality = $feature->properties->name_nl ?? $feature->properties->name_fr;
+                    }
+
+                    $builder->setLocality($municipality);
+                    break;
+
+                case 'postal_code':
+                    $builder->setPostalCode((string) $feature->id);
+                    break;
+            }
+        }
+
+        $result = $builder->build();
+
+        return new AddressCollection([$result]);
     }
 
     /**
@@ -148,7 +206,15 @@ final class Geo6 extends AbstractHttpProvider implements Provider
      */
     private function executeQuery(string $url): \stdClass
     {
-        $token = $this->getToken();
+        $path = parse_url($url, PHP_URL_PATH);
+
+        if (substr($path, 0, 23) === '/geocode/getAddressList') {
+            $token = $this->getToken('/geocode/getAddressList');
+        } elseif (substr($path, 0, 7) === '/latlng') {
+            $token = $this->getToken('/latlng');
+        } else {
+            throw new UnsupportedOperation('The Geo-6 provider does not support this query.');
+        }
 
         $request = $this->getRequest($url);
 
@@ -173,7 +239,7 @@ final class Geo6 extends AbstractHttpProvider implements Provider
      *
      * @return object
      */
-    private function getToken()
+    private function getToken(string $path)
     {
         $time = time();
 
@@ -181,7 +247,7 @@ final class Geo6 extends AbstractHttpProvider implements Provider
         $t .= $time.'__';
         $t .= parse_url(self::GEOCODE_ENDPOINT_URL, PHP_URL_HOST).'__';
         $t .= 'GET'.'__';
-        $t .= '/geocode/getAddressList';
+        $t .= $path;
 
         $token = crypt($t, '$6$'.$this->privateKey.'$');
 
