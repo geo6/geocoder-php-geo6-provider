@@ -159,7 +159,7 @@ final class Geo6 extends AbstractHttpProvider implements Provider
         $builder->setCoordinates($latitude, $longitude);
 
         foreach ($json->features as $feature) {
-            switch($feature->properties->type) {
+            switch ($feature->properties->type) {
                 case 'country':
                     if ($language === 'fr' || empty($language)) {
                         $country = $feature->properties->name_fr ?? $feature->properties->name_nl;
