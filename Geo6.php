@@ -264,7 +264,7 @@ final class Geo6 extends AbstractHttpProvider implements Provider
     /**
      * Extract address components in French or Dutch.
      *
-     * @param array $components
+     * @param array  $components
      * @param string $language
      *
      * @return array
@@ -304,24 +304,24 @@ final class Geo6 extends AbstractHttpProvider implements Provider
         }
 
         return [
-            'country' => $country ?? null,
-            'countrycode' => $countryCode ?? null,
-            'locality' => $locality ?? null,
+            'country'      => $country ?? null,
+            'countrycode'  => $countryCode ?? null,
+            'locality'     => $locality ?? null,
             'municipality' => $municipality ?? null,
-            'postalcode' => $postalCode ?? null,
-            'province' => $province ?? null,
-            'region' => $region ?? null,
-            'street' => $street ?? null,
+            'postalcode'   => $postalCode ?? null,
+            'province'     => $province ?? null,
+            'region'       => $region ?? null,
+            'street'       => $street ?? null,
             'streetnumber' => $streetNumber ?? null,
         ];
     }
 
     /**
-     * Create Address from components
+     * Create Address from components.
      *
      * @param string $provider
-     * @param array $components
-     * @param array $coordinates
+     * @param array  $components
+     * @param array  $coordinates
      *
      * @return Address
      */
