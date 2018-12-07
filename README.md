@@ -11,9 +11,9 @@
 This is the "Geo-6" provider for the [Geocoder PHP](https://github.com/geocoder-php/Geocoder).
 
 **Coverage:** Belgium  
-**API:** <https://api.geo6.be/>
+**API:** <https://api-v2.geo6.be/>
 
-You will require a key to access this API. You can have a look at the available functionalities here : <https://api.geo6.be/>.  
+You will require a key to access this API. You can have a look at the available functionalities here : <https://api-v2.geo6.be/>.  
 Please [contact us](https://geo6.be/contact.html) to ask for an access to this API.
 
 ## Install
