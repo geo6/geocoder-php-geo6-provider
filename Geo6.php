@@ -31,7 +31,7 @@ use Http\Client\HttpClient;
  */
 final class Geo6 extends AbstractHttpProvider implements Provider
 {
-    const GEOCODE_ENDPOINT_URL = 'https://api.geo6.be/';
+    const GEOCODE_ENDPOINT_URL = 'https://api-v2.geo6.be/';
 
     /**
      * @var string
@@ -61,10 +61,10 @@ final class Geo6 extends AbstractHttpProvider implements Provider
     {
         $address = $query->getText();
 
-        $streetName = $query->getData('streetName');
         $streetNumber = $query->getData('streetNumber') ?? '';
-        $postalCode = $query->getData('postalCode') ?? null;
-        $locality = $query->getData('locality') ?? null;
+        $streetName = $query->getData('streetName');
+        $postalCode = $query->getData('postalCode');
+        $locality = $query->getData('locality');
 
         // This API does not support IP
         if (filter_var($address, FILTER_VALIDATE_IP)) {
@@ -72,8 +72,8 @@ final class Geo6 extends AbstractHttpProvider implements Provider
         }
 
         // Save a request if no valid address entered
-        if (empty($address) || empty($streetName)) {
-            throw new InvalidArgument('Address and streetname cannot be empty.');
+        if (empty($address) && empty($streetName)) {
+            throw new InvalidArgument('Address or Streetname cannot be empty.');
         }
 
         $language = '';
@@ -83,11 +83,13 @@ final class Geo6 extends AbstractHttpProvider implements Provider
 
         $url = rtrim(self::GEOCODE_ENDPOINT_URL, '/');
         if (!is_null($postalCode) && !is_null($locality)) {
-            $url = sprintf($url.'/geocode/getAddressList/%s/%s/%s/%s', urlencode($locality), urlencode($postalCode), urlencode($streetName), urlencode($streetNumber));
+            $url = sprintf($url.'/geocode/getAddressList/%s/%s/%s/%s', rawurlencode($locality), rawurlencode($postalCode), rawurlencode($streetName), rawurlencode($streetNumber));
         } elseif (!is_null($postalCode) || !is_null($locality)) {
-            $url = sprintf($url.'/geocode/getAddressList/%s/%s/%s', urlencode($postalCode ?? $locality), urlencode($streetName), urlencode($streetNumber));
+            $url = sprintf($url.'/geocode/getAddressList/%s/%s/%s', rawurlencode($postalCode ?? $locality), rawurlencode($streetName), rawurlencode($streetNumber));
+        } elseif (!is_null($streetName)) {
+            $url = sprintf($url.'/geocode/getAddressList/%s/%s', rawurlencode($streetName), rawurlencode($streetNumber));
         } else {
-            $url = sprintf($url.'/geocode/getAddressList/%s/%s', urlencode($streetName), urlencode($streetNumber));
+            $url = sprintf($url.'/geocode/getAddressList/%s', rawurlencode($address));
         }
         $json = $this->executeQuery($url);
 
@@ -98,8 +100,13 @@ final class Geo6 extends AbstractHttpProvider implements Provider
 
         $results = [];
         foreach ($json->features as $feature) {
-            $address_fr = $this->extractComponents($feature, 'fr');
-            $address_nl = $this->extractComponents($feature, 'nl');
+            $components_fr = self::extractComponents($feature->properties->components, 'fr');
+            $components_nl = self::extractComponents($feature->properties->components, 'nl');
+
+            $coordinates = $feature->geometry->coordinates;
+
+            $address_fr = self::buildAddress($this->getName(), $components_fr, $coordinates);
+            $address_nl = self::buildAddress($this->getName(), $components_nl, $coordinates);
 
             switch ($language) {
                 case 'fr':
@@ -139,14 +146,8 @@ final class Geo6 extends AbstractHttpProvider implements Provider
         $longitude = $coordinates->getLongitude();
         $latitude = $coordinates->getLatitude();
 
-        $radius = $query->getData('radius');
-
         $url = rtrim(self::GEOCODE_ENDPOINT_URL, '/');
-        if (!is_null($radius)) {
-            $url = sprintf($url.'/latlng/%s,%s,%s', floatval($latitude), floatval($longitude), floatval($radius));
-        } else {
-            $url = sprintf($url.'/latlng/%s,%s', floatval($latitude), floatval($longitude));
-        }
+        $url = sprintf($url.'/latlng/%s/%s', floatval($latitude), floatval($longitude));
 
         $json = $this->executeQuery($url);
 
@@ -155,40 +156,41 @@ final class Geo6 extends AbstractHttpProvider implements Provider
             return new AddressCollection([]);
         }
 
-        $builder = new AddressBuilder($this->getName());
-        $builder->setCoordinates($latitude, $longitude);
+        $results = [];
+
+        $coordinates = [
+            $json->query->longitude,
+            $json->query->latitude,
+        ];
 
         foreach ($json->features as $feature) {
-            switch ($feature->properties->type) {
-                case 'country':
-                    if ($language === 'fr' || empty($language)) {
-                        $country = $feature->properties->name_fr ?? $feature->properties->name_nl;
-                    } else {
-                        $country = $feature->properties->name_nl ?? $feature->properties->name_fr;
-                    }
+            $components_fr = self::extractComponents($feature->properties->components, 'fr');
+            $components_nl = self::extractComponents($feature->properties->components, 'nl');
 
-                    $builder->setCountry($country);
+            $address_fr = self::buildAddress($this->getName(), $components_fr, $coordinates);
+            $address_nl = self::buildAddress($this->getName(), $components_nl, $coordinates);
+
+            switch ($language) {
+                case 'fr':
+                    $results[] = !is_null($address_fr) ? $address_fr : $address_nl;
                     break;
 
-                case 'municipality':
-                    if ($language === 'fr' || empty($language)) {
-                        $municipality = $feature->properties->name_fr ?? $feature->properties->name_nl;
-                    } else {
-                        $municipality = $feature->properties->name_nl ?? $feature->properties->name_fr;
-                    }
-
-                    $builder->setLocality($municipality);
+                case 'nl':
+                    $results[] = !is_null($address_nl) ? $address_nl : $address_fr;
                     break;
 
-                case 'postal_code':
-                    $builder->setPostalCode((string) $feature->id);
+                default:
+                    if (!is_null($address_fr)) {
+                        $results[] = $address_fr;
+                    }
+                    if (!is_null($address_nl)) {
+                        $results[] = $address_nl;
+                    }
                     break;
             }
         }
 
-        $result = $builder->build();
-
-        return new AddressCollection([$result]);
+        return new AddressCollection($results);
     }
 
     /**
@@ -220,8 +222,8 @@ final class Geo6 extends AbstractHttpProvider implements Provider
 
         $request = $request->withHeader('Referer', 'http'.(!empty($_SERVER['HTTPS']) ? 's' : '').'://'.($_SERVER['SERVER_NAME'] ?? 'localhost').'/');
         $request = $request->withHeader('X-Geo6-Consumer', $this->clientId);
-        $request = $request->withHeader('X-Geo6-Timestamp', (string) $token->time);
-        $request = $request->withHeader('X-Geo6-Token', $token->token);
+        $request = $request->withHeader('X-Geo6-Timestamp', (string) $token['time']);
+        $request = $request->withHeader('X-Geo6-Token', $token['token']);
 
         $body = $this->getParsedResponse($request);
 
@@ -237,9 +239,11 @@ final class Geo6 extends AbstractHttpProvider implements Provider
     /**
      * Generate token needed to query API.
      *
-     * @return object
+     * @param string $path
+     *
+     * @return array
      */
-    private function getToken(string $path)
+    private function getToken(string $path) : array
     {
         $time = time();
 
@@ -251,28 +255,28 @@ final class Geo6 extends AbstractHttpProvider implements Provider
 
         $token = crypt($t, '$6$'.$this->privateKey.'$');
 
-        return (object) [
-            'time'     => $time,
-            'token'    => $token,
+        return [
+            'time'  => $time,
+            'token' => $token,
         ];
     }
 
     /**
      * Extract address components in French or Dutch.
      *
-     * @param object $feature
+     * @param array $components
      * @param string $language
+     *
+     * @return array
      */
-    private function extractComponents(object $feature, string $language)
+    private static function extractComponents(array $components, string $language) : array
     {
-        $coordinates = $feature->geometry->coordinates;
-
         if (in_array($language, ['fr', 'nl'])) {
-            foreach ($feature->properties->components as $component) {
+            foreach ($components as $component) {
                 switch ($component->type) {
                     case 'country':
                         $country = $component->{'name_'.$language};
-                        // $countryCode = $component->id;
+                        $countryCode = $component->id;
                         break;
                     case 'locality':
                         $locality = $component->{'name_'.$language};
@@ -290,7 +294,7 @@ final class Geo6 extends AbstractHttpProvider implements Provider
                         $region = $component->{'name_'.$language};
                         break;
                     case 'street':
-                        $streetName = $component->{'name_'.$language};
+                        $street = $component->{'name_'.$language};
                         break;
                     case 'street_number':
                         $streetNumber = (string) $component->{'name_'.$language};
@@ -299,28 +303,58 @@ final class Geo6 extends AbstractHttpProvider implements Provider
             }
         }
 
-        if (isset($municipality, $postalCode, $streetName, $streetNumber) &&
-            !is_null($municipality) && !is_null($postalCode) && !is_null($streetName)
-        ) {
-            $builder = new AddressBuilder($this->getName());
-            $builder->setCoordinates($coordinates[1], $coordinates[0])
-                ->setStreetNumber($streetNumber ?? null)
-                ->setStreetName($streetName)
-                ->setLocality($municipality)
-                ->setPostalCode($postalCode)
-                ->setSubLocality($locality ?? null)
-                ->setCountry($country ?? null)
-                ->setCountryCode($countryCode ?? null);
+        return [
+            'country' => $country ?? null,
+            'countrycode' => $countryCode ?? null,
+            'locality' => $locality ?? null,
+            'municipality' => $municipality ?? null,
+            'postalcode' => $postalCode ?? null,
+            'province' => $province ?? null,
+            'region' => $region ?? null,
+            'street' => $street ?? null,
+            'streetnumber' => $streetNumber ?? null,
+        ];
+    }
 
-            if (isset($region) && !is_null($region)) {
-                $builder->addAdminLevel(1, $region);
-            }
-            if (isset($province) && !is_null($province)) {
-                $builder->addAdminLevel(2, $province);
-            }
-            $builder->addAdminLevel(3, $municipality);
+    /**
+     * Create Address from components
+     *
+     * @param string $provider
+     * @param array $components
+     * @param array $coordinates
+     *
+     * @return Address
+     */
+    private static function buildAddress(string $provider, array $components, array $coordinates) : Address
+    {
+        $country = $components['country'];
+        $countryCode = $components['countrycode'];
+        $locality = $components['locality'];
+        $municipality = $components['municipality'];
+        $postalCode = $components['postalcode'];
+        $province = $components['province'];
+        $region = $components['region'];
+        $streetName = $components['street'];
+        $streetNumber = $components['streetnumber'];
 
-            return $builder->build();
+        $builder = new AddressBuilder($provider);
+        $builder->setCoordinates($coordinates[1], $coordinates[0])
+            ->setStreetNumber($streetNumber)
+            ->setStreetName($streetName)
+            ->setLocality($municipality)
+            ->setPostalCode($postalCode)
+            ->setSubLocality($locality)
+            ->setCountry($country)
+            ->setCountryCode($countryCode);
+
+        if (isset($region) && !is_null($region)) {
+            $builder->addAdminLevel(1, $region);
         }
+        if (isset($province) && !is_null($province)) {
+            $builder->addAdminLevel(2, $province);
+        }
+        $builder->addAdminLevel(3, $municipality);
+
+        return $builder->build();
     }
 }

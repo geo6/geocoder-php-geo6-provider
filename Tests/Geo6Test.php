@@ -75,11 +75,12 @@ class Geo6Test extends BaseTestCase
         $this->assertInstanceOf('\Geocoder\Model\Address', $result);
         $this->assertEquals(50.841973, $result->getCoordinates()->getLatitude(), '', 0.00001);
         $this->assertEquals(4.362288, $result->getCoordinates()->getLongitude(), '', 0.00001);
-        $this->assertEquals('1000', $result->getPostalCode());
         $this->assertEquals('BRUXELLES', $result->getLocality());
+        $this->assertEquals('Belgique', $result->getCountry()->getName());
+        $this->assertEquals('be', $result->getCountry()->getCode());
     }
 
-    public function testReverseQueryWithRadius()
+    public function testGeocodeQuery()
     {
         if (!isset($_SERVER['GEO6_CUSTOMER_ID']) || !isset($_SERVER['GEO6_API_KEY'])) {
             $this->markTestSkipped('You need to configure the GEO6_CUSTOMER_ID and GEO6_API_KEY value in phpunit.xml.dist');
@@ -87,11 +88,10 @@ class Geo6Test extends BaseTestCase
 
         $provider = new Geo6($this->getHttpClient(), $_SERVER['GEO6_CUSTOMER_ID'], $_SERVER['GEO6_API_KEY']);
 
-        $query = ReverseQuery::fromCoordinates(50.841973, 4.362288)
-            ->withLocale('fr')
-            ->withData('radius', 100);
+        $query = GeocodeQuery::create('1 Place des Palais 1000 Bruxelles')
+            ->withLocale('fr');
 
-        $results = $provider->reverseQuery($query);
+        $results = $provider->geocodeQuery($query);
 
         $this->assertInstanceOf('Geocoder\Model\AddressCollection', $results);
         $this->assertCount(1, $results);
@@ -101,11 +101,15 @@ class Geo6Test extends BaseTestCase
         $this->assertInstanceOf('\Geocoder\Model\Address', $result);
         $this->assertEquals(50.841973, $result->getCoordinates()->getLatitude(), '', 0.00001);
         $this->assertEquals(4.362288, $result->getCoordinates()->getLongitude(), '', 0.00001);
+        $this->assertEquals('1', $result->getStreetNumber());
+        $this->assertEquals('Place des Palais', $result->getStreetName());
         $this->assertEquals('1000', $result->getPostalCode());
         $this->assertEquals('BRUXELLES', $result->getLocality());
+        $this->assertEquals('Belgique', $result->getCountry()->getName());
+        $this->assertEquals('be', $result->getCountry()->getCode());
     }
 
-    public function testGeocodeQuery()
+    public function testGeocodeQueryWithData()
     {
         if (!isset($_SERVER['GEO6_CUSTOMER_ID']) || !isset($_SERVER['GEO6_API_KEY'])) {
             $this->markTestSkipped('You need to configure the GEO6_CUSTOMER_ID and GEO6_API_KEY value in phpunit.xml.dist');
@@ -134,5 +138,7 @@ class Geo6Test extends BaseTestCase
         $this->assertEquals('Place des Palais', $result->getStreetName());
         $this->assertEquals('1000', $result->getPostalCode());
         $this->assertEquals('BRUXELLES', $result->getLocality());
+        $this->assertEquals('Belgique', $result->getCountry()->getName());
+        $this->assertEquals('be', $result->getCountry()->getCode());
     }
 }
