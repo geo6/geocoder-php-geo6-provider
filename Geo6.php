@@ -110,18 +110,26 @@ final class Geo6 extends AbstractHttpProvider implements Provider
 
             switch ($language) {
                 case 'fr':
-                    $results[] = $address_fr ?? $address_nl;
+                    if (!is_null($address_fr->getStreetName())) {
+                        $results[] = $address_fr;
+                    } elseif (!is_null($address_nl->getStreetName())) {
+                        $results[] = $address_nl;
+                    }
                     break;
 
                 case 'nl':
-                    $results[] = $address_nl ?? $address_fr;
+                    if (!is_null($address_nl->getStreetName())) {
+                        $results[] = $address_nl;
+                    } elseif (!is_null($address_fr->getStreetName())) {
+                        $results[] = $address_fr;
+                    }
                     break;
 
                 default:
-                    if (!is_null($address_fr)) {
+                    if (!is_null($address_fr->getStreetName())) {
                         $results[] = $address_fr;
                     }
-                    if (!is_null($address_nl)) {
+                    if (!is_null($address_nl->getStreetName())) {
                         $results[] = $address_nl;
                     }
                     break;
@@ -172,18 +180,26 @@ final class Geo6 extends AbstractHttpProvider implements Provider
 
             switch ($language) {
                 case 'fr':
-                    $results[] = !is_null($address_fr) ? $address_fr : $address_nl;
+                    if (!is_null($address_fr->getStreetName())) {
+                        $results[] = $address_fr;
+                    } elseif (!is_null($address_nl->getStreetName())) {
+                        $results[] = $address_nl;
+                    }
                     break;
 
                 case 'nl':
-                    $results[] = !is_null($address_nl) ? $address_nl : $address_fr;
+                    if (!is_null($address_nl->getStreetName())) {
+                        $results[] = $address_nl;
+                    } elseif (!is_null($address_fr->getStreetName())) {
+                        $results[] = $address_fr;
+                    }
                     break;
 
                 default:
-                    if (!is_null($address_fr)) {
+                    if (!is_null($address_fr->getStreetName())) {
                         $results[] = $address_fr;
                     }
-                    if (!is_null($address_nl)) {
+                    if (!is_null($address_nl->getStreetName())) {
                         $results[] = $address_nl;
                     }
                     break;
