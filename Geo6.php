@@ -180,26 +180,26 @@ final class Geo6 extends AbstractHttpProvider implements Provider
 
             switch ($language) {
                 case 'fr':
-                    if (!is_null($address_fr->getStreetName())) {
+                    if (!is_null($address_fr->getLocality())) {
                         $results[] = $address_fr;
-                    } elseif (!is_null($address_nl->getStreetName())) {
+                    } elseif (!is_null($address_nl->getLocality())) {
                         $results[] = $address_nl;
                     }
                     break;
 
                 case 'nl':
-                    if (!is_null($address_nl->getStreetName())) {
+                    if (!is_null($address_nl->getLocality())) {
                         $results[] = $address_nl;
-                    } elseif (!is_null($address_fr->getStreetName())) {
+                    } elseif (!is_null($address_fr->getLocality())) {
                         $results[] = $address_fr;
                     }
                     break;
 
                 default:
-                    if (!is_null($address_fr->getStreetName())) {
+                    if (!is_null($address_fr->getLocality())) {
                         $results[] = $address_fr;
                     }
-                    if (!is_null($address_nl->getStreetName())) {
+                    if (!is_null($address_nl->getLocality())) {
                         $results[] = $address_nl;
                     }
                     break;
