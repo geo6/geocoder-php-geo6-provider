@@ -45,7 +45,7 @@ final class Geo6 extends AbstractHttpProvider implements Provider
     private $clientId;
 
     /**
-     * @var string|null
+     * @var string
      */
     private $privateKey;
 
@@ -236,11 +236,17 @@ final class Geo6 extends AbstractHttpProvider implements Provider
      */
     private function executeQuery(string $url): \stdClass
     {
-        $path = parse_url($url, PHP_URL_PATH);
+        $request = $this->getRequest($url);
+
+        $request = $request->withHeader('Referer', 'http'.(!empty($_SERVER['HTTPS']) ? 's' : '').'://'.($_SERVER['SERVER_NAME'] ?? 'localhost').'/');
 
         if ($this->useGeo6Token !== true) {
             $token = $this->getJWT();
+
+            $request = $request->withHeader('Authorization', sprintf('Bearer %s', $token));
         } else {
+            $path = parse_url($url, PHP_URL_PATH);
+
             if (substr($path, 0, 23) === '/geocode/getAddressList') {
                 $token = $this->getGeo6Token('/geocode/getAddressList');
             } elseif (substr($path, 0, 7) === '/latlng') {
@@ -248,14 +254,7 @@ final class Geo6 extends AbstractHttpProvider implements Provider
             } else {
                 throw new UnsupportedOperation('The Geo-6 provider does not support this query.');
             }
-        }
 
-        $request = $this->getRequest($url);
-
-        $request = $request->withHeader('Referer', 'http'.(!empty($_SERVER['HTTPS']) ? 's' : '').'://'.($_SERVER['SERVER_NAME'] ?? 'localhost').'/');
-        if ($this->useGeo6Token !== true) {
-            $request = $request->withHeader('Authorization', sprintf('Bearer %s', $token));
-        } else {
             $request = $request->withHeader('X-Geo6-Consumer', $this->clientId);
             $request = $request->withHeader('X-Geo6-Timestamp', (string) $token['time']);
             $request = $request->withHeader('X-Geo6-Token', $token['token']);
