@@ -25,6 +25,12 @@ use Geocoder\Provider\Provider;
 use Geocoder\Query\GeocodeQuery;
 use Geocoder\Query\ReverseQuery;
 use Http\Client\HttpClient;
+use Jose\Component\Core\AlgorithmManager;
+use Jose\Component\Core\Converter\StandardConverter;
+use Jose\Component\Core\JWK;
+use Jose\Component\Signature\Algorithm\HS512;
+use Jose\Component\Signature\JWSBuilder;
+use Jose\Component\Signature\Serializer\CompactSerializer;
 
 /**
  * @author Jonathan Beliën <jbe@geo6.be>
@@ -44,12 +50,18 @@ final class Geo6 extends AbstractHttpProvider implements Provider
     private $privateKey;
 
     /**
+     * @var bool
+     */
+    private $useGeo6Token = false;
+
+    /**
      * @param HttpClient $client an HTTP adapter
      */
-    public function __construct(HttpClient $client, string $clientId, string $privateKey)
+    public function __construct(HttpClient $client, string $clientId, string $privateKey, bool $useGeo6Token = false)
     {
         $this->clientId = $clientId;
         $this->privateKey = $privateKey;
+        $this->useGeo6Token = $useGeo6Token;
 
         parent::__construct($client);
     }
@@ -226,20 +238,28 @@ final class Geo6 extends AbstractHttpProvider implements Provider
     {
         $path = parse_url($url, PHP_URL_PATH);
 
-        if (substr($path, 0, 23) === '/geocode/getAddressList') {
-            $token = $this->getToken('/geocode/getAddressList');
-        } elseif (substr($path, 0, 7) === '/latlng') {
-            $token = $this->getToken('/latlng');
+        if ($this->useGeo6Token !== true) {
+            $token = $this->getJWT();
         } else {
-            throw new UnsupportedOperation('The Geo-6 provider does not support this query.');
+            if (substr($path, 0, 23) === '/geocode/getAddressList') {
+                $token = $this->getGeo6Token('/geocode/getAddressList');
+            } elseif (substr($path, 0, 7) === '/latlng') {
+                $token = $this->getGeo6Token('/latlng');
+            } else {
+                throw new UnsupportedOperation('The Geo-6 provider does not support this query.');
+            }
         }
 
         $request = $this->getRequest($url);
 
         $request = $request->withHeader('Referer', 'http'.(!empty($_SERVER['HTTPS']) ? 's' : '').'://'.($_SERVER['SERVER_NAME'] ?? 'localhost').'/');
-        $request = $request->withHeader('X-Geo6-Consumer', $this->clientId);
-        $request = $request->withHeader('X-Geo6-Timestamp', (string) $token['time']);
-        $request = $request->withHeader('X-Geo6-Token', $token['token']);
+        if ($this->useGeo6Token !== true) {
+            $request = $request->withHeader('Authorization', sprintf('Bearer %s', $token));
+        } else {
+            $request = $request->withHeader('X-Geo6-Consumer', $this->clientId);
+            $request = $request->withHeader('X-Geo6-Timestamp', (string) $token['time']);
+            $request = $request->withHeader('X-Geo6-Token', $token['token']);
+        }
 
         $body = $this->getParsedResponse($request);
 
@@ -253,13 +273,15 @@ final class Geo6 extends AbstractHttpProvider implements Provider
     }
 
     /**
-     * Generate token needed to query API.
+     * Generate (old) GEO-6 token needed to query API.
+     *
+     * @deprecated
      *
      * @param string $path
      *
      * @return array
      */
-    private function getToken(string $path) : array
+    private function getGeo6Token(string $path) : array
     {
         $time = time();
 
@@ -275,6 +297,48 @@ final class Geo6 extends AbstractHttpProvider implements Provider
             'time'  => $time,
             'token' => $token,
         ];
+    }
+
+    /**
+     * Generate JSON Web Token needed to query API.
+     *
+     * @see https://jwt.io/
+     *
+     * @return string
+     */
+    private function getJWT() : string
+    {
+        $algorithmManager = AlgorithmManager::create([
+            new HS512(),
+        ]);
+
+        $jwk = JWK::create([
+            'kty' => 'oct',
+            'k'   => $this->privateKey,
+            'use' => 'sig',
+        ]);
+
+        $jsonConverter = new StandardConverter();
+
+        $payload = $jsonConverter->encode([
+            'aud' => 'GEO-6 API',
+            'iat' => time(),
+            'iss' => sprintf('geocoder-php-%s', $this->getName()),
+            'sub' => $this->clientId,
+        ]);
+
+        $jwsBuilder = new JWSBuilder(
+            $jsonConverter,
+            $algorithmManager
+        );
+
+        $jws = $jwsBuilder
+            ->create()
+            ->withPayload($payload)
+            ->addSignature($jwk, ['alg' => 'HS512', 'typ' => 'JWT'])
+            ->build();
+
+        return (new CompactSerializer($jsonConverter))->serialize($jws);
     }
 
     /**

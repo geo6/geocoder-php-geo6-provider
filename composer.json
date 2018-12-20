@@ -13,6 +13,8 @@
     "require": {
         "php": "^7.0",
         "geocoder-php/common-http": "^4.1",
+        "web-token/jwt-key-mgmt": "^1.2",
+        "web-token/jwt-signature": "^1.2",
         "willdurand/geocoder": "^4.0"
     },
     "provide": {
@@ -24,6 +26,9 @@
         "php-http/curl-client": "^1.7",
         "php-http/message": "^1.0",
         "phpunit/phpunit": "6.3.* || 6.5.*"
+    },
+    "config": {
+        "sort-packages": true
     },
     "autoload": {
         "psr-4": {
