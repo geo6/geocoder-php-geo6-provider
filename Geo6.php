@@ -399,7 +399,7 @@ final class Geo6 extends AbstractHttpProvider implements Provider
                         break;
                 }
             }
-        } else if ($language === 'de') {
+        } elseif ($language === 'de') {
             foreach ($components as $component) {
                 switch ($component->type) {
                     case 'country':

@@ -167,7 +167,6 @@ class Geo6Test extends BaseTestCase
         $this->assertEquals('be', $result->getCountry()->getCode());
     }
 
-
     public function testGeocodeQueryWithData()
     {
         if (!isset($_SERVER['GEO6_CUSTOMER_ID']) || !isset($_SERVER['GEO6_API_KEY'])) {
