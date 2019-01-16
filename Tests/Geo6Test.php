@@ -80,7 +80,65 @@ class Geo6Test extends BaseTestCase
         $this->assertEquals('be', $result->getCountry()->getCode());
     }
 
-    public function testGeocodeQuery()
+    public function testGeocodeQueryCRABLocaleNL()
+    {
+        if (!isset($_SERVER['GEO6_CUSTOMER_ID']) || !isset($_SERVER['GEO6_API_KEY'])) {
+            $this->markTestSkipped('You need to configure the GEO6_CUSTOMER_ID and GEO6_API_KEY value in phpunit.xml.dist');
+        }
+
+        $provider = new Geo6($this->getHttpClient(), $_SERVER['GEO6_CUSTOMER_ID'], $_SERVER['GEO6_API_KEY']);
+
+        $query = GeocodeQuery::create('28 Motstraat, 2800 Mechelen')
+            ->withLocale('nl');
+
+        $results = $provider->geocodeQuery($query);
+
+        $this->assertInstanceOf('Geocoder\Model\AddressCollection', $results);
+        $this->assertCount(1, $results);
+
+        /** @var \Geocoder\Model\Address $result */
+        $result = $results->first();
+        $this->assertInstanceOf('\Geocoder\Model\Address', $result);
+        $this->assertEquals(51.012946, $result->getCoordinates()->getLatitude(), '', 0.00001);
+        $this->assertEquals(4.488223, $result->getCoordinates()->getLongitude(), '', 0.00001);
+        $this->assertEquals('28', $result->getStreetNumber());
+        $this->assertEquals('Motstraat', $result->getStreetName());
+        $this->assertEquals('2800', $result->getPostalCode());
+        $this->assertEquals('MECHELEN', $result->getLocality());
+        $this->assertEquals('België', $result->getCountry()->getName());
+        $this->assertEquals('be', $result->getCountry()->getCode());
+    }
+
+    public function testGeocodeQueryICARLocaleDE()
+    {
+        if (!isset($_SERVER['GEO6_CUSTOMER_ID']) || !isset($_SERVER['GEO6_API_KEY'])) {
+            $this->markTestSkipped('You need to configure the GEO6_CUSTOMER_ID and GEO6_API_KEY value in phpunit.xml.dist');
+        }
+
+        $provider = new Geo6($this->getHttpClient(), $_SERVER['GEO6_CUSTOMER_ID'], $_SERVER['GEO6_API_KEY']);
+
+        $query = GeocodeQuery::create('33 Aachener Straße, 4731 Raeren')
+            ->withLocale('de');
+
+        $results = $provider->geocodeQuery($query);
+
+        $this->assertInstanceOf('Geocoder\Model\AddressCollection', $results);
+        $this->assertCount(1, $results);
+
+        /** @var \Geocoder\Model\Address $result */
+        $result = $results->first();
+        $this->assertInstanceOf('\Geocoder\Model\Address', $result);
+        $this->assertEquals(50.694741, $result->getCoordinates()->getLatitude(), '', 0.00001);
+        $this->assertEquals(6.083168, $result->getCoordinates()->getLongitude(), '', 0.00001);
+        $this->assertEquals('33', $result->getStreetNumber());
+        $this->assertEquals('Aachener Straße', $result->getStreetName());
+        $this->assertEquals('4731', $result->getPostalCode());
+        $this->assertEquals('RAEREN', $result->getLocality());
+        $this->assertEquals('Belgien', $result->getCountry()->getName());
+        $this->assertEquals('be', $result->getCountry()->getCode());
+    }
+
+    public function testGeocodeQueryUrbISLocaleFR()
     {
         if (!isset($_SERVER['GEO6_CUSTOMER_ID']) || !isset($_SERVER['GEO6_API_KEY'])) {
             $this->markTestSkipped('You need to configure the GEO6_CUSTOMER_ID and GEO6_API_KEY value in phpunit.xml.dist');
@@ -108,6 +166,7 @@ class Geo6Test extends BaseTestCase
         $this->assertEquals('Belgique', $result->getCountry()->getName());
         $this->assertEquals('be', $result->getCountry()->getCode());
     }
+
 
     public function testGeocodeQueryWithData()
     {
