@@ -89,7 +89,7 @@ final class Geo6 extends AbstractHttpProvider implements Provider
         }
 
         $language = '';
-        if (!is_null($query->getLocale()) && preg_match('/^(fr|nl).*$/', $query->getLocale(), $matches) === 1) {
+        if (!is_null($query->getLocale()) && preg_match('/^(fr|nl|de).*$/', $query->getLocale(), $matches) === 1) {
             $language = $matches[1];
         }
 
@@ -114,11 +114,13 @@ final class Geo6 extends AbstractHttpProvider implements Provider
         foreach ($json->features as $feature) {
             $components_fr = self::extractComponents($feature->properties->components, 'fr');
             $components_nl = self::extractComponents($feature->properties->components, 'nl');
+            $components_de = self::extractComponents($feature->properties->components, 'de');
 
             $coordinates = $feature->geometry->coordinates;
 
             $address_fr = self::buildAddress($this->getName(), $components_fr, $coordinates);
             $address_nl = self::buildAddress($this->getName(), $components_nl, $coordinates);
+            $address_de = self::buildAddress($this->getName(), $components_de, $coordinates);
 
             switch ($language) {
                 case 'fr':
@@ -126,6 +128,8 @@ final class Geo6 extends AbstractHttpProvider implements Provider
                         $results[] = $address_fr;
                     } elseif (!is_null($address_nl->getStreetName())) {
                         $results[] = $address_nl;
+                    } elseif (!is_null($address_de->getStreetName())) {
+                        $results[] = $address_de;
                     }
                     break;
 
@@ -134,6 +138,18 @@ final class Geo6 extends AbstractHttpProvider implements Provider
                         $results[] = $address_nl;
                     } elseif (!is_null($address_fr->getStreetName())) {
                         $results[] = $address_fr;
+                    } elseif (!is_null($address_de->getStreetName())) {
+                        $results[] = $address_de;
+                    }
+                    break;
+
+                case 'de':
+                    if (!is_null($address_de->getStreetName())) {
+                        $results[] = $address_de;
+                    } elseif (!is_null($address_fr->getStreetName())) {
+                        $results[] = $address_fr;
+                    } elseif (!is_null($address_nl->getStreetName())) {
+                        $results[] = $address_nl;
                     }
                     break;
 
@@ -143,6 +159,9 @@ final class Geo6 extends AbstractHttpProvider implements Provider
                     }
                     if (!is_null($address_nl->getStreetName())) {
                         $results[] = $address_nl;
+                    }
+                    if (!is_null($address_de->getStreetName())) {
+                        $results[] = $address_de;
                     }
                     break;
             }
@@ -377,6 +396,36 @@ final class Geo6 extends AbstractHttpProvider implements Provider
                         break;
                     case 'street_number':
                         $streetNumber = (string) $component->{'name_'.$language};
+                        break;
+                }
+            }
+        } else if ($language === 'de') {
+            foreach ($components as $component) {
+                switch ($component->type) {
+                    case 'country':
+                        $country = $component->name_de;
+                        $countryCode = $component->id;
+                        break;
+                    case 'locality':
+                        $locality = $component->name_fr ?? $component->name_nl;
+                        break;
+                    case 'municipality':
+                        $municipality = $component->name_fr ?? $component->name_nl;
+                        break;
+                    case 'postal_code':
+                        $postalCode = (string) $component->id;
+                        break;
+                    case 'province':
+                        $province = $component->name_fr ?? $component->name_nl;
+                        break;
+                    case 'region':
+                        $region = $component->name_fr ?? $component->name_nl;
+                        break;
+                    case 'street':
+                        $street = $component->name_de;
+                        break;
+                    case 'street_number':
+                        $streetNumber = (string) $component->name_fr ?? $component->name_nl;
                         break;
                 }
             }
