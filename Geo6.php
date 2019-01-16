@@ -416,10 +416,10 @@ final class Geo6 extends AbstractHttpProvider implements Provider
                         $postalCode = (string) $component->id;
                         break;
                     case 'province':
-                        $province = $component->name_fr ?? $component->name_nl;
+                        $province = $component->name_de ?? $component->name_fr ?? $component->name_nl;
                         break;
                     case 'region':
-                        $region = $component->name_fr ?? $component->name_nl;
+                        $region = $component->name_de ?? $component->name_fr ?? $component->name_nl;
                         break;
                     case 'street':
                         $street = $component->name_de;
