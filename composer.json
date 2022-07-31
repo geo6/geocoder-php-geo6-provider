@@ -11,10 +11,11 @@
         }
     ],
     "require": {
-        "php": "^7.0",
+        "php": "^7.4 || ^8.0",
         "geocoder-php/common-http": "^4.1",
-        "web-token/jwt-key-mgmt": "^1.2",
-        "web-token/jwt-signature": "^1.2",
+        "web-token/jwt-key-mgmt": "^2.0",
+        "web-token/jwt-signature": "^2.0",
+        "web-token/jwt-signature-algorithm-hmac": "^2.0",
         "willdurand/geocoder": "^4.0"
     },
     "provide": {
@@ -24,7 +25,7 @@
         "geocoder-php/provider-integration-tests": "^1.0",
         "php-http/curl-client": "^1.7 || ^2.0",
         "php-http/message": "^1.0",
-        "phpunit/phpunit": "^6.5 || ^7.5"
+        "phpunit/phpunit": "^9.5"
     },
     "config": {
         "sort-packages": true
