@@ -12,7 +12,7 @@ namespace Geocoder\Provider\Geo6POI\Tests;
 
 use Geocoder\IntegrationTest\ProviderIntegrationTest;
 use Geocoder\Provider\Geo6\Geo6;
-use Http\Client\HttpClient;
+use Psr\Http\Client\ClientInterface;
 
 class IntegrationTest extends ProviderIntegrationTest
 {
@@ -30,7 +30,7 @@ class IntegrationTest extends ProviderIntegrationTest
         'testExceptions'                => 'Does not allow geocode query without data.',
     ];
 
-    protected function createProvider(HttpClient $httpClient)
+    protected function createProvider(ClientInterface $httpClient)
     {
         return new Geo6($httpClient, $this->getCustomerId(), $this->getApiKey());
     }
