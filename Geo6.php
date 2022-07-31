@@ -23,13 +23,13 @@ use Geocoder\Model\AddressCollection;
 use Geocoder\Provider\Provider;
 use Geocoder\Query\GeocodeQuery;
 use Geocoder\Query\ReverseQuery;
-use Http\Client\HttpClient;
 use Jose\Component\Core\AlgorithmManager;
 use Jose\Component\Core\Converter\StandardConverter;
 use Jose\Component\Core\JWK;
 use Jose\Component\Signature\Algorithm\HS512;
 use Jose\Component\Signature\JWSBuilder;
 use Jose\Component\Signature\Serializer\CompactSerializer;
+use Psr\Http\Client\ClientInterface;
 
 /**
  * @author Jonathan Beliën <jbe@geo6.be>
@@ -54,9 +54,9 @@ final class Geo6 extends AbstractHttpProvider implements Provider
     private $useGeo6Token = false;
 
     /**
-     * @param HttpClient $client an HTTP adapter
+     * @param ClientInterface $client an HTTP adapter
      */
-    public function __construct(HttpClient $client, string $clientId, string $privateKey, bool $useGeo6Token = false)
+    public function __construct(ClientInterface $client, string $clientId, string $privateKey, bool $useGeo6Token = false)
     {
         $this->clientId = $clientId;
         $this->privateKey = $privateKey;
