@@ -298,7 +298,7 @@ final class Geo6 extends AbstractHttpProvider implements Provider
      *
      * @return array
      */
-    private function getGeo6Token(string $path) : array
+    private function getGeo6Token(string $path): array
     {
         $time = time();
 
@@ -323,7 +323,7 @@ final class Geo6 extends AbstractHttpProvider implements Provider
      *
      * @return string
      */
-    private function getJWT() : string
+    private function getJWT(): string
     {
         $algorithmManager = AlgorithmManager::create([
             new HS512(),
@@ -366,7 +366,7 @@ final class Geo6 extends AbstractHttpProvider implements Provider
      *
      * @return array
      */
-    private static function extractComponents(array $components, string $language) : array
+    private static function extractComponents(array $components, string $language): array
     {
         if (in_array($language, ['fr', 'nl'])) {
             foreach ($components as $component) {
@@ -452,7 +452,7 @@ final class Geo6 extends AbstractHttpProvider implements Provider
      *
      * @return Address
      */
-    private static function buildAddress(string $provider, array $components, array $coordinates) : Address
+    private static function buildAddress(string $provider, array $components, array $coordinates): Address
     {
         $country = $components['country'];
         $countryCode = $components['countrycode'];
